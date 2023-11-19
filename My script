@@ -444,3 +444,8 @@ loadstring(game:HttpGet("https://freenote.biz/raw/80jXm2Q0a7",true))()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/RScriptz/RobloxScripts/main/BreakIn2.lua"))()
     print("Clicked")
 end)
+
+Section:NewButton("bike of hell", "ButtonInfo", function()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/ToraIsMe/ToraIsMe/main/0BikeHell'))()
+    print("Clicked")
+end)
