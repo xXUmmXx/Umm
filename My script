@@ -450,8 +450,8 @@ loadstring(game:HttpGet('https://raw.githubusercontent.com/ToraIsMe/ToraIsMe/mai
     print("Clicked")
 end)
 
-Section:NewButton("tower defense x", "key TowerDefenseX9894!!", function()
-loadstring(game:HttpGet("https://raw.githubusercontent.com/LOLking123456/TowerX/main/Defense"))()
+Section:NewButton("empty", "__", function()
+
     print("Clicked")
 end)
 
