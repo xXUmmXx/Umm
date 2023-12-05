@@ -4,25 +4,7 @@ local Window = Library.CreateLib("xXUmmXx script", "DarkTheme")
 local Tab = Window:NewTab("script")
 local Section = Tab:NewSection("Main")
 Section:NewButton("inf yield", "ButtonInfo", function()
--- inf yield --
-defaultsettings = {
-	prefix = ';';
-	StayOpen = false;
-	keepIY = true;
-	logsEnabled = false;
-	jLogsEnabled = false;
-	aliases = {};
-	binds = {};
-	WayPoints = {};
-	PluginsTable = {};
-}
-
-defaults = game:GetService("HttpService"):JSONEncode(defaultsettings)
-
-writefile("IY_FE.iy",defaults)
-
-
-loadstring(game:HttpGet('https://raw.githubusercontent.com/EdgeIY/infiniteyield/master/source'))()
+loadstring(game:HttpGet('https://raw.githubusercontent.com/xXUmmXx/Umm/main/Inf%20yield'))()
     print("Clicked")
 end)
 
