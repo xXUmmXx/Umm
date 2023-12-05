@@ -1,5 +1,6 @@
 local Library = loadstring(game:HttpGet("https://pastebin.com/raw/vff1bQ9F"))()
 local Window = Library.CreateLib("xXUmmXx script", "DarkTheme")
+-- Main --
 local Tab = Window:NewTab("script")
 local Section = Tab:NewSection("Main")
 Section:NewButton("inf yield", "ButtonInfo", function()
@@ -450,11 +451,6 @@ loadstring(game:HttpGet('https://raw.githubusercontent.com/ToraIsMe/ToraIsMe/mai
     print("Clicked")
 end)
 
-Section:NewButton("empty", "__", function()
-
-    print("Clicked")
-end)
-
 Section:NewButton("boobs", "you can custom this script", function()
 (getgenv and getgenv() or _G or shared).BB_Settings = {
 Breast = true,
@@ -482,4 +478,25 @@ end)
 Section:NewButton("character stealer", "if doesn't work join the group", function()
 loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\116\112\71\101\116\40\34\104\116\116\112\115\58\47\47\114\97\119\46\103\105\116\104\117\98\117\115\101\114\99\111\110\116\101\110\116\46\99\111\109\47\73\110\118\111\111\107\101\114\49\49\47\79\117\116\102\105\116\47\109\97\105\110\47\79\117\116\102\105\116\67\111\112\105\101\114\46\108\117\97\34\44\32\116\114\117\101\41\41\40\41\10")()
     print("Clicked")
+end)
+
+
+-- player --
+local Tab = Window:NewTab("player")
+local Section = Tab:NewSection("player")
+
+Section:NewToggle("auto jump power", "ToggleInfo", function(state)
+    if state then
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = 120
+    else
+        game.Players.LocalPlayer.Character.Humanoid.JumpPower = 50
+    end
+end)
+
+Section:NewToggle("auto walk speed", "ToggleInfo", function(state)
+    if state then
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 120
+    else
+        game.Players.LocalPlayer.Character.Humanoid.WalkSpeed = 16
+    end
 end)
