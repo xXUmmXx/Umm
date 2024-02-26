@@ -462,6 +462,21 @@ loadstring("\108\111\97\100\115\116\114\105\110\103\40\103\97\109\101\58\72\116\
     print("Clicked")
 end)
 
+Section:NewButton("human flashlight", "nothing", function()
+--[[
+A distribution of https://wearedevs.net/scripts
+Last updated August 2, 2021
+
+Simply inject this script into any game using a Lua injector like JJSploit. 
+]]
+
+character = game:GetService("Players").LocalPlayer.Character
+pointLight = Instance.new("PointLight")
+pointLight.Parent = character.HumanoidRootPart
+    print("Clicked")
+end)
+
+
 
 -- player --
 local Tab = Window:NewTab("player")
