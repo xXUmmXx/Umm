@@ -438,8 +438,8 @@ loadstring(game:HttpGet('https://raw.githubusercontent.com/ToraIsMe/ToraIsMe/mai
     print("Clicked")
 end)
 
-Section:NewButton("____", "nothing", function()
-
+Section:NewButton("basically fnf remix", "nothing", function()
+loadstring(game:HttpGet("https://scriptblox.com/raw/Universal-Script-basically-FNF-Remix-op-autoplayer-Script-8840"))()
     print("Clicked")
 end)
 
