@@ -44,7 +44,7 @@ loadstring(game:HttpGet('https://raw.githubusercontent.com/xXUmmXx/Umm/main/Robe
 end)
 
 Section:NewButton("flee the facility", "ButtonInfo", function()
-loadstring(game:HttpGet('https://raw.githubusercontent.com/Aboahaogsigsigaivva/__Scripts/__Main/__Code/__FleeTheFacility.lua'))()
+loadstring(game:HttpGet("https://scriptblox.com/raw/Universal-Script-unfair-Hub-3936"))()
     print("Clicked")
 end)
 
