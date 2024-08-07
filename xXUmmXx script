@@ -151,4 +151,7 @@ loadstring(game:HttpGet("https://cdn.wearedevs.net/scripts/Fly.txt"))()
     print("Clicked")
 end)
 
-
+Section:NewButton("aimbot", "ButtonInfo", function()
+loadstring(game:HttpGet("https://raw.githubusercontent.com/PawsThePaw/Neutron.lua/main/MainNeutron.lua"))()
+    print("Clicked")
+end)
