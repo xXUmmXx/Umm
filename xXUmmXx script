@@ -155,3 +155,8 @@ Section:NewButton("aimbot", "ButtonInfo", function()
 loadstring(game:HttpGet("https://raw.githubusercontent.com/PawsThePaw/Neutron.lua/main/MainNeutron.lua"))()
     print("Clicked")
 end)
+
+Section:NewButton("invisible", "ButtonInfo", function()
+loadstring(game:HttpGet('https://whimper.xyz/kitty'))()
+    print("Clicked")
+end)
