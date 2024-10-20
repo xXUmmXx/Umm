@@ -1,13 +1,3 @@
---[[ https://discord.gg/jxDz5WnXu3 For More Scripts, lots of Emojis & Stickers + 100MB File Upload limit.
-Originally Created by: 'With love and lust from "V" / Ukiyo'
-
-? Support Me & my Work - https://ko-fi.com/drainchurch
-
-! Some of features only work when script is placed inside autoexec (autoexecution, [EXECUTOR_FOLDER] \ autoexec - for example) folder of your exploit. Also recommended to add "!!!" in script name, ex. "!!!_GUI.luau" for better effect.
-! Some of features only work on certain executors like SYNAPSE X
-
-* Got questions/long messages? Contact on Discord [deuces#1961] - *Copy Insides of brackets or DISCORD SERVER https://discord.gg/WR3pBRmdPw (preferred way of communicating)
-	Available settings: ]]
 	(getgenv and getgenv() or _G or shared).BB_Settings = {
 		Breast = true,
 		BreastPhysics = { Target = 5, Speed = 10, Damper = 0.2 },
