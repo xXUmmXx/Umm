@@ -1,0 +1,88 @@
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local PathfindingService = game:GetService("PathfindingService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+
+-- Track whether "Click to Move" is enabled
+local clickToMoveEnabled = true
+
+-- Function to move character to a target position
+local function moveToTapPosition(targetPosition)
+    if not clickToMoveEnabled then return end
+    
+    -- Create a path to the target position
+    local path = PathfindingService:CreatePath({
+        AgentRadius = 2,
+        AgentHeight = 5,
+        AgentCanJump = true,
+        AgentJumpHeight = 5,
+        AgentMaxSlope = 45
+    })
+    path:ComputeAsync(character.PrimaryPart.Position, targetPosition)
+
+    -- Check if the path status is "Success" and move along it
+    if path.Status == Enum.PathStatus.Success then
+        for _, waypoint in ipairs(path:GetWaypoints()) do
+            humanoid:MoveTo(waypoint.Position)
+            humanoid.MoveToFinished:Wait()
+        end
+    end
+end
+
+-- Function to create a click marker
+local function createClickMarker(position)
+    if not clickToMoveEnabled then return end
+
+    local marker = Instance.new("Part")
+    marker.Shape = Enum.PartType.Ball
+    marker.Size = Vector3.new(0.5, 0.5, 0.5)
+    marker.Position = position + Vector3.new(0, 0.5, 0) -- Slightly above ground
+    marker.Anchored = true
+    marker.CanCollide = false
+    marker.Material = Enum.Material.Neon
+    marker.Color = Color3.fromRGB(255, 0, 0) -- Red color
+    marker.Parent = workspace
+
+    -- Fade out and remove the marker after 5 second
+    game:GetService("Debris"):AddItem(marker, 5)
+end
+
+-- Detect screen taps on mobile
+UserInputService.TouchTap:Connect(function(touchPositions)
+    if not clickToMoveEnabled then return end
+
+    local touch = touchPositions[1]
+    
+    -- Cast a ray from the camera to the tap position
+    local camera = workspace.CurrentCamera
+    local ray = camera:ScreenPointToRay(touch.X, touch.Y)
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterDescendantsInstances = {character}
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+    -- Find the position on the ground where the player tapped
+    local raycastResult = workspace:Raycast(ray.Origin, ray.Direction * 500, raycastParams)
+    if raycastResult then
+        createClickMarker(raycastResult.Position)
+        moveToTapPosition(raycastResult.Position)
+    end
+end)
+
+-- Create a GUI button to toggle Click to Move
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 100, 0, 50)
+toggleButton.Position = UDim2.new(0.1, 0, 0.9, 0)
+toggleButton.Text = "Disable Move"
+toggleButton.Parent = screenGui
+
+-- Toggle Click to Move when the button is clicked
+toggleButton.MouseButton1Click:Connect(function()
+    clickToMoveEnabled = not clickToMoveEnabled
+    toggleButton.Text = clickToMoveEnabled and "Disable Move" or "Enable Move"
+end)
