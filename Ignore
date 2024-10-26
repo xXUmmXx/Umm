@@ -20,20 +20,13 @@ local function enableMovementControls()
     ContextActionService:UnbindAction("DisableMovement")
 end
 
--- Retry pathfinding with slight adjustments if it fails
-local function attemptPathRetry(path, targetPosition)
-    local retries = 3 -- Number of retries allowed
-    for i = 1, retries do
-        path:ComputeAsync(player.Character.PrimaryPart.Position, targetPosition)
-        if path.Status == Enum.PathStatus.Success then
-            return true
-        end
-        wait(0.2) -- Small delay before retrying
-    end
-    return false
+-- Function to move character directly to target if pathfinding fails
+local function walkDirectlyTo(targetPosition)
+    humanoid:MoveTo(targetPosition)
+    humanoid.MoveToFinished:Wait()
 end
 
--- Function to move character to a target position
+-- Function to move character to a target position with fallback
 local function moveToTapPosition(targetPosition)
     if not clickToMoveEnabled or isMoving then return end
 
@@ -41,36 +34,29 @@ local function moveToTapPosition(targetPosition)
     disableMovementControls()
 
     local path = PathfindingService:CreatePath({
-        AgentRadius = 3,       -- Increased for more obstacle avoidance
+        AgentRadius = 3,
         AgentHeight = 6,
         AgentCanJump = true,
-        AgentJumpHeight = 7,   -- Increased jump height to handle more obstacles
-        AgentMaxSlope = 50     -- More slope tolerance for uneven terrain
+        AgentJumpHeight = 7,
+        AgentMaxSlope = 50
     })
 
-    if not attemptPathRetry(path, targetPosition) then
-        print("Pathfinding failed after retries.")
-        enableMovementControls()
-        isMoving = false
-        return
-    end
+    path:ComputeAsync(player.Character.PrimaryPart.Position, targetPosition)
 
-    for _, waypoint in ipairs(path:GetWaypoints()) do
-        humanoid:MoveTo(waypoint.Position)
-        local reached = humanoid.MoveToFinished:Wait()
-        
-        -- Check for obstacles and re-compute path if blocked
-        if not reached then
-            print("Path obstructed, recalculating...")
-            if not attemptPathRetry(path, targetPosition) then
-                print("Failed to find an alternative path.")
-                enableMovementControls()
-                isMoving = false
-                return
+    -- If path is successful, follow waypoints; otherwise, move directly to target
+    if path.Status == Enum.PathStatus.Success then
+        for _, waypoint in ipairs(path:GetWaypoints()) do
+            humanoid:MoveTo(waypoint.Position)
+            if not humanoid.MoveToFinished:Wait() then
+                break -- Stop if movement is obstructed
             end
         end
+    else
+        print("Pathfinding failed, moving directly to target.")
+        walkDirectlyTo(targetPosition)
     end
 
+    -- Remove the marker when the character reaches the final destination
     if currentMarker then
         currentMarker:Destroy()
         currentMarker = nil
