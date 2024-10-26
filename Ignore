@@ -2,7 +2,6 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ContextActionService = game:GetService("ContextActionService")
-local CollectionService = game:GetService("CollectionService")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -11,7 +10,6 @@ local humanoid = character:WaitForChild("Humanoid")
 local clickToMoveEnabled = true
 local isMoving = false
 local currentMarker = nil
-local hasJumpedForGap = false
 
 -- Disable movement controls
 local function disableMovementControls()
@@ -23,7 +21,7 @@ local function enableMovementControls()
     ContextActionService:UnbindAction("DisableMovement")
 end
 
--- Function to clear the click marker
+-- Function to clear the current marker
 local function clearMarker()
     if currentMarker then
         currentMarker:Destroy()
@@ -31,21 +29,18 @@ local function clearMarker()
     end
 end
 
--- Function to make the character jump if it hasn't already jumped for the gap
-local function jumpIfGapDetected()
-    if not hasJumpedForGap and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
-        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
-        hasJumpedForGap = true -- Set the flag to true to prevent multiple jumps
-    end
+-- Function to move character directly to target if pathfinding fails
+local function walkDirectlyTo(targetPosition)
+    humanoid:MoveTo(targetPosition)
+    humanoid.MoveToFinished:Wait()
 end
 
--- Function to move character to a target position with gap and kill block detection
+-- Function to move character to a target position with fallback
 local function moveToTapPosition(targetPosition)
     if not clickToMoveEnabled or isMoving then return end
 
     isMoving = true
     disableMovementControls()
-    hasJumpedForGap = false -- Reset gap jump flag for each new movement
 
     local path = PathfindingService:CreatePath({
         AgentRadius = 3,
@@ -58,25 +53,7 @@ local function moveToTapPosition(targetPosition)
     path:ComputeAsync(character.PrimaryPart.Position, targetPosition)
 
     if path.Status == Enum.PathStatus.Success then
-        for i, waypoint in ipairs(path:GetWaypoints()) do
-            -- Raycast down to detect gaps or kill blocks
-            local raycastParams = RaycastParams.new()
-            raycastParams.FilterDescendantsInstances = {character}
-            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-
-            local partBelow = workspace:Raycast(waypoint.Position, Vector3.new(0, -5, 0), raycastParams)
-
-            if not partBelow then
-                -- No ground detected below, assume it's a gap and jump
-                jumpIfGapDetected()
-            elseif CollectionService:HasTag(partBelow.Instance, "KillBlock") then
-                -- Kill block detected, jump over it
-                jumpIfGapDetected()
-            else
-                -- Reset the gap jump flag if grounded
-                hasJumpedForGap = false
-            end
-
+        for _, waypoint in ipairs(path:GetWaypoints()) do
             humanoid:MoveTo(waypoint.Position)
             if not humanoid.MoveToFinished:Wait() then
                 break
@@ -84,8 +61,7 @@ local function moveToTapPosition(targetPosition)
         end
     else
         print("Pathfinding failed, moving directly to target.")
-        humanoid:MoveTo(targetPosition)
-        humanoid.MoveToFinished:Wait()
+        walkDirectlyTo(targetPosition)
     end
 
     clearMarker()
@@ -150,9 +126,11 @@ local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoid = newCharacter:WaitForChild("Humanoid")
     
+    -- Set up GUI and clear marker on respawn
     createGUI()
     clearMarker()
 
+    -- Reconnect the Died event
     humanoid.Died:Connect(function()
         isMoving = false
         clearMarker() -- Clear any remaining markers when the player dies
