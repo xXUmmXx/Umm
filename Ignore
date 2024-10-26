@@ -11,6 +11,7 @@ local humanoid = character:WaitForChild("Humanoid")
 local clickToMoveEnabled = true
 local isMoving = false
 local currentMarker = nil
+local hasJumpedForGap = false
 
 -- Disable movement controls
 local function disableMovementControls()
@@ -30,10 +31,11 @@ local function clearMarker()
     end
 end
 
--- Function to make the character jump
-local function jump()
-    if humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
+-- Function to make the character jump if it hasn't already jumped for the gap
+local function jumpIfGapDetected()
+    if not hasJumpedForGap and humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
         humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+        hasJumpedForGap = true -- Set the flag to true to prevent multiple jumps
     end
 end
 
@@ -43,6 +45,7 @@ local function moveToTapPosition(targetPosition)
 
     isMoving = true
     disableMovementControls()
+    hasJumpedForGap = false -- Reset gap jump flag for each new movement
 
     local path = PathfindingService:CreatePath({
         AgentRadius = 3,
@@ -65,10 +68,13 @@ local function moveToTapPosition(targetPosition)
 
             if not partBelow then
                 -- No ground detected below, assume it's a gap and jump
-                jump()
+                jumpIfGapDetected()
             elseif CollectionService:HasTag(partBelow.Instance, "KillBlock") then
                 -- Kill block detected, jump over it
-                jump()
+                jumpIfGapDetected()
+            else
+                -- Reset the gap jump flag if grounded
+                hasJumpedForGap = false
             end
 
             humanoid:MoveTo(waypoint.Position)
