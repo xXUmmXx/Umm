@@ -4,7 +4,8 @@ local PathfindingService = game:GetService("PathfindingService")
 local ContextActionService = game:GetService("ContextActionService")
 
 local player = Players.LocalPlayer
-local humanoid = nil -- Initialize humanoid
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
 
 local clickToMoveEnabled = true
 local isMoving = false -- Track if the character is currently moving
@@ -41,7 +42,7 @@ local function moveToTapPosition(targetPosition)
         AgentMaxSlope = 50
     })
 
-    path:ComputeAsync(player.Character.PrimaryPart.Position, targetPosition)
+    path:ComputeAsync(character.PrimaryPart.Position, targetPosition)
 
     -- If path is successful, follow waypoints; otherwise, move directly to target
     if path.Status == Enum.PathStatus.Success then
@@ -93,7 +94,7 @@ UserInputService.TouchTap:Connect(function(touchPositions)
     local camera = workspace.CurrentCamera
     local ray = camera:ScreenPointToRay(touch.X, touch.Y)
     local raycastParams = RaycastParams.new()
-    raycastParams.FilterDescendantsInstances = {player.Character}
+    raycastParams.FilterDescendantsInstances = {character}
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
 
     local raycastResult = workspace:Raycast(ray.Origin, ray.Direction * 500, raycastParams)
@@ -120,15 +121,17 @@ local function createGUI()
     end)
 end
 
--- Setup character and GUI on player spawn
-player.CharacterAdded:Connect(function(character)
-    humanoid = character:WaitForChild("Humanoid")
+-- Re-initialize script components when the player respawns
+local function onCharacterAdded(newCharacter)
+    character = newCharacter
+    humanoid = newCharacter:WaitForChild("Humanoid")
     createGUI()
-end)
+end
+
+-- Listen for character respawns and reconnect script
+player.CharacterAdded:Connect(onCharacterAdded)
 
 -- Initial GUI setup if the character is already present
 if player.Character then
-    humanoid = player.Character:WaitForChild("Humanoid")
+    createGUI()
 end
-
-createGUI()
