@@ -11,17 +11,6 @@ local clickToMoveEnabled = true
 local isMoving = false
 local currentMarker = nil
 
--- Add kill block tag
-local CollectionService = game:GetService("CollectionService")
-
--- Function to clear the current marker
-local function clearMarker()
-    if currentMarker then
-        currentMarker:Destroy()
-        currentMarker = nil
-    end
-end
-
 -- Disable movement controls
 local function disableMovementControls()
     ContextActionService:BindAction("DisableMovement", function() return Enum.ContextActionResult.Sink end, false, Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D)
@@ -39,7 +28,7 @@ local function jump()
     end
 end
 
--- Function to move character to a target position with kill block avoidance
+-- Function to move character to a target position with gap and kill block detection
 local function moveToTapPosition(targetPosition)
     if not clickToMoveEnabled or isMoving then return end
 
@@ -51,23 +40,28 @@ local function moveToTapPosition(targetPosition)
         AgentHeight = 6,
         AgentCanJump = true,
         AgentJumpHeight = 7,
-        AgentMaxSlope = 50,
-        CollisionGroup = "KillBlockAvoid" -- Add a collision group for kill blocks
+        AgentMaxSlope = 50
     })
 
-    -- Set up collision group filter for kill blocks
-    local raycastParams = RaycastParams.new()
-    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
-    raycastParams.FilterDescendantsInstances = {character}
     path:ComputeAsync(character.PrimaryPart.Position, targetPosition)
 
     if path.Status == Enum.PathStatus.Success then
-        for _, waypoint in ipairs(path:GetWaypoints()) do
-            -- Check for kill blocks in path
-            local partBelow = workspace:Raycast(waypoint.Position, Vector3.new(0, -1, 0), raycastParams)
-            if partBelow and CollectionService:HasTag(partBelow.Instance, "KillBlock") then
-                jump() -- Jump over kill block if necessary
+        for i, waypoint in ipairs(path:GetWaypoints()) do
+            -- Raycast down to detect gaps or kill blocks
+            local raycastParams = RaycastParams.new()
+            raycastParams.FilterDescendantsInstances = {character}
+            raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+
+            local partBelow = workspace:Raycast(waypoint.Position, Vector3.new(0, -5, 0), raycastParams)
+
+            if not partBelow then
+                -- No ground detected below, assume it's a gap and jump
+                jump()
+            elseif CollectionService:HasTag(partBelow.Instance, "KillBlock") then
+                -- Kill block detected, jump over it
+                jump()
             end
+
             humanoid:MoveTo(waypoint.Position)
             if not humanoid.MoveToFinished:Wait() then
                 break
@@ -141,11 +135,9 @@ local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoid = newCharacter:WaitForChild("Humanoid")
     
-    -- Set up GUI and clear marker on respawn
     createGUI()
     clearMarker()
 
-    -- Reconnect the Died event
     humanoid.Died:Connect(function()
         isMoving = false
         clearMarker() -- Clear any remaining markers when the player dies
