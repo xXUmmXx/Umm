@@ -6,7 +6,6 @@ local ContextActionService = game:GetService("ContextActionService")
 local player = Players.LocalPlayer
 local humanoid = nil -- Initialize humanoid
 
--- Track whether "Click to Move" is enabled
 local clickToMoveEnabled = true
 local isMoving = false -- Track if the character is currently moving
 local currentMarker = nil -- Store the current marker
@@ -21,74 +20,96 @@ local function enableMovementControls()
     ContextActionService:UnbindAction("DisableMovement")
 end
 
+-- Retry pathfinding with slight adjustments if it fails
+local function attemptPathRetry(path, targetPosition)
+    local retries = 3 -- Number of retries allowed
+    for i = 1, retries do
+        path:ComputeAsync(player.Character.PrimaryPart.Position, targetPosition)
+        if path.Status == Enum.PathStatus.Success then
+            return true
+        end
+        wait(0.2) -- Small delay before retrying
+    end
+    return false
+end
+
 -- Function to move character to a target position
 local function moveToTapPosition(targetPosition)
-    if not clickToMoveEnabled or isMoving then return end -- Exit if disabled or already moving
+    if not clickToMoveEnabled or isMoving then return end
 
-    isMoving = true -- Set moving state to true
-    disableMovementControls() -- Disable manual movement
+    isMoving = true
+    disableMovementControls()
 
-    -- Create a path to the target position
     local path = PathfindingService:CreatePath({
-        AgentRadius = 2,
-        AgentHeight = 5,
+        AgentRadius = 3,       -- Increased for more obstacle avoidance
+        AgentHeight = 6,
         AgentCanJump = true,
-        AgentJumpHeight = 5,
-        AgentMaxSlope = 45
+        AgentJumpHeight = 7,   -- Increased jump height to handle more obstacles
+        AgentMaxSlope = 50     -- More slope tolerance for uneven terrain
     })
-    path:ComputeAsync(player.Character.PrimaryPart.Position, targetPosition)
 
-    -- Check if the path status is "Success" and move along it
-    if path.Status == Enum.PathStatus.Success then
-        for _, waypoint in ipairs(path:GetWaypoints()) do
-            humanoid:MoveTo(waypoint.Position)
-            humanoid.MoveToFinished:Wait() -- Wait until the character reaches this waypoint
+    if not attemptPathRetry(path, targetPosition) then
+        print("Pathfinding failed after retries.")
+        enableMovementControls()
+        isMoving = false
+        return
+    end
+
+    for _, waypoint in ipairs(path:GetWaypoints()) do
+        humanoid:MoveTo(waypoint.Position)
+        local reached = humanoid.MoveToFinished:Wait()
+        
+        -- Check for obstacles and re-compute path if blocked
+        if not reached then
+            print("Path obstructed, recalculating...")
+            if not attemptPathRetry(path, targetPosition) then
+                print("Failed to find an alternative path.")
+                enableMovementControls()
+                isMoving = false
+                return
+            end
         end
     end
 
-    -- Remove the marker when the character reaches the final destination
     if currentMarker then
         currentMarker:Destroy()
         currentMarker = nil
     end
 
-    isMoving = false -- Reset moving state after reaching the destination
-    enableMovementControls() -- Re-enable manual movement
+    isMoving = false
+    enableMovementControls()
 end
 
 -- Function to create a click marker
 local function createClickMarker(position)
     if currentMarker then
-        currentMarker:Destroy() -- Remove the existing marker if it exists
+        currentMarker:Destroy()
     end
 
     local marker = Instance.new("Part")
     marker.Shape = Enum.PartType.Ball
-    marker.Size = Vector3.new(0.5, 0.5, 0.5) -- Size of the marker
-    marker.Position = position + Vector3.new(0, 0.5, 0) -- Slightly above ground
+    marker.Size = Vector3.new(0.5, 0.5, 0.5)
+    marker.Position = position + Vector3.new(0, 0.5, 0)
     marker.Anchored = true
     marker.CanCollide = false
     marker.Material = Enum.Material.Neon
-    marker.Color = Color3.fromRGB(255, 0, 0) -- Red color
+    marker.Color = Color3.fromRGB(255, 0, 0)
     marker.Parent = workspace
 
-    currentMarker = marker -- Store the current marker for later removal
+    currentMarker = marker
 end
 
 -- Detect screen taps on mobile
 UserInputService.TouchTap:Connect(function(touchPositions)
-    if not clickToMoveEnabled or isMoving then return end -- Exit if disabled or already moving
+    if not clickToMoveEnabled or isMoving then return end
 
     local touch = touchPositions[1]
-
-    -- Cast a ray from the camera to the tap position
     local camera = workspace.CurrentCamera
     local ray = camera:ScreenPointToRay(touch.X, touch.Y)
     local raycastParams = RaycastParams.new()
     raycastParams.FilterDescendantsInstances = {player.Character}
     raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
 
-    -- Find the position on the ground where the player tapped
     local raycastResult = workspace:Raycast(ray.Origin, ray.Direction * 500, raycastParams)
     if raycastResult then
         createClickMarker(raycastResult.Position)
@@ -103,11 +124,10 @@ local function createGUI()
 
     local toggleButton = Instance.new("TextButton")
     toggleButton.Size = UDim2.new(0, 100, 0, 50)
-    toggleButton.Position = UDim2.new(0.1, -70, 0.9, -250)
+    toggleButton.Position = UDim2.new(0.1, 0, 0.9, 0)
     toggleButton.Text = "Disable Move"
     toggleButton.Parent = screenGui
 
-    -- Toggle Click to Move when the button is clicked
     toggleButton.MouseButton1Click:Connect(function()
         clickToMoveEnabled = not clickToMoveEnabled
         toggleButton.Text = clickToMoveEnabled and "Disable Move" or "Enable Move"
@@ -116,13 +136,13 @@ end
 
 -- Setup character and GUI on player spawn
 player.CharacterAdded:Connect(function(character)
-    humanoid = character:WaitForChild("Humanoid") -- Get the humanoid when the character spawns
-    createGUI() -- Create GUI when the character spawns
+    humanoid = character:WaitForChild("Humanoid")
+    createGUI()
 end)
 
 -- Initial GUI setup if the character is already present
 if player.Character then
-    humanoid = player.Character:WaitForChild("Humanoid") -- Get humanoid if already present
+    humanoid = player.Character:WaitForChild("Humanoid")
 end
 
-createGUI() -- Create initial GUI
+createGUI()
