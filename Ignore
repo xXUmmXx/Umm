@@ -8,8 +8,8 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 
 local clickToMoveEnabled = true
-local isMoving = false -- Track if the character is currently moving
-local currentMarker = nil -- Store the current marker
+local isMoving = false
+local currentMarker = nil
 
 -- Disable movement controls
 local function disableMovementControls()
@@ -19,6 +19,14 @@ end
 -- Enable movement controls
 local function enableMovementControls()
     ContextActionService:UnbindAction("DisableMovement")
+end
+
+-- Function to clear the current marker
+local function clearMarker()
+    if currentMarker then
+        currentMarker:Destroy()
+        currentMarker = nil
+    end
 end
 
 -- Function to move character directly to target if pathfinding fails
@@ -44,12 +52,11 @@ local function moveToTapPosition(targetPosition)
 
     path:ComputeAsync(character.PrimaryPart.Position, targetPosition)
 
-    -- If path is successful, follow waypoints; otherwise, move directly to target
     if path.Status == Enum.PathStatus.Success then
         for _, waypoint in ipairs(path:GetWaypoints()) do
             humanoid:MoveTo(waypoint.Position)
             if not humanoid.MoveToFinished:Wait() then
-                break -- Stop if movement is obstructed
+                break
             end
         end
     else
@@ -57,21 +64,14 @@ local function moveToTapPosition(targetPosition)
         walkDirectlyTo(targetPosition)
     end
 
-    -- Remove the marker when the character reaches the final destination
-    if currentMarker then
-        currentMarker:Destroy()
-        currentMarker = nil
-    end
-
+    clearMarker()
     isMoving = false
     enableMovementControls()
 end
 
 -- Function to create a click marker
 local function createClickMarker(position)
-    if currentMarker then
-        currentMarker:Destroy()
-    end
+    clearMarker()
 
     local marker = Instance.new("Part")
     marker.Shape = Enum.PartType.Ball
@@ -121,17 +121,26 @@ local function createGUI()
     end)
 end
 
--- Re-initialize script components when the player respawns
+-- Re-initialize script components on character spawn or respawn
 local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoid = newCharacter:WaitForChild("Humanoid")
+    
+    -- Set up GUI and clear marker on respawn
     createGUI()
+    clearMarker()
+
+    -- Reconnect the Died event
+    humanoid.Died:Connect(function()
+        isMoving = false
+        clearMarker() -- Clear any remaining markers when the player dies
+    end)
 end
 
--- Listen for character respawns and reconnect script
+-- Listen for character respawns
 player.CharacterAdded:Connect(onCharacterAdded)
 
--- Initial GUI setup if the character is already present
+-- Initial setup if character is already present
 if player.Character then
-    createGUI()
+    onCharacterAdded(player.Character)
 end
