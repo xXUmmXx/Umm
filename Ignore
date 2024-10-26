@@ -2,6 +2,7 @@ local Players = game:GetService("Players")
 local UserInputService = game:GetService("UserInputService")
 local PathfindingService = game:GetService("PathfindingService")
 local ContextActionService = game:GetService("ContextActionService")
+local CollectionService = game:GetService("CollectionService")
 
 local player = Players.LocalPlayer
 local character = player.Character or player.CharacterAdded:Wait()
@@ -19,6 +20,14 @@ end
 -- Enable movement controls
 local function enableMovementControls()
     ContextActionService:UnbindAction("DisableMovement")
+end
+
+-- Function to clear the click marker
+local function clearMarker()
+    if currentMarker then
+        currentMarker:Destroy()
+        currentMarker = nil
+    end
 end
 
 -- Function to make the character jump
