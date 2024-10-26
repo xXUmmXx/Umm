@@ -10,6 +10,7 @@ local humanoid = character:WaitForChild("Humanoid")
 local clickToMoveEnabled = true
 local isMoving = false
 local currentMarker = nil
+local pathMarkers = {}
 
 -- Disable movement controls
 local function disableMovementControls()
@@ -21,21 +22,52 @@ local function enableMovementControls()
     ContextActionService:UnbindAction("DisableMovement")
 end
 
--- Function to clear the current marker
-local function clearMarker()
+-- Function to clear all markers (including path markers)
+local function clearMarkers()
     if currentMarker then
         currentMarker:Destroy()
         currentMarker = nil
     end
+
+    for _, marker in pairs(pathMarkers) do
+        marker:Destroy()
+    end
+    pathMarkers = {}
 end
 
--- Function to move character directly to target if pathfinding fails
-local function walkDirectlyTo(targetPosition)
-    humanoid:MoveTo(targetPosition)
-    humanoid.MoveToFinished:Wait()
+-- Function to create a waypoint marker
+local function createWaypointMarker(position)
+    local marker = Instance.new("Part")
+    marker.Shape = Enum.PartType.Ball
+    marker.Size = Vector3.new(0.3, 0.3, 0.3)
+    marker.Position = position + Vector3.new(0, 0.5, 0)
+    marker.Anchored = true
+    marker.CanCollide = false
+    marker.Material = Enum.Material.Neon
+    marker.Color = Color3.fromRGB(0, 255, 0)
+    marker.Parent = workspace
+
+    table.insert(pathMarkers, marker)
 end
 
--- Function to move character to a target position with fallback
+-- Function to create the final destination marker
+local function createClickMarker(position)
+    clearMarkers()
+
+    local marker = Instance.new("Part")
+    marker.Shape = Enum.PartType.Ball
+    marker.Size = Vector3.new(0.5, 0.5, 0.5)
+    marker.Position = position + Vector3.new(0, 0.5, 0)
+    marker.Anchored = true
+    marker.CanCollide = false
+    marker.Material = Enum.Material.Neon
+    marker.Color = Color3.fromRGB(255, 0, 0)
+    marker.Parent = workspace
+
+    currentMarker = marker
+end
+
+-- Function to move character to a target position with fallback and markers along path
 local function moveToTapPosition(targetPosition)
     if not clickToMoveEnabled or isMoving then return end
 
@@ -54,6 +86,7 @@ local function moveToTapPosition(targetPosition)
 
     if path.Status == Enum.PathStatus.Success then
         for _, waypoint in ipairs(path:GetWaypoints()) do
+            createWaypointMarker(waypoint.Position) -- Create a marker at each waypoint
             humanoid:MoveTo(waypoint.Position)
             if not humanoid.MoveToFinished:Wait() then
                 break
@@ -64,26 +97,9 @@ local function moveToTapPosition(targetPosition)
         walkDirectlyTo(targetPosition)
     end
 
-    clearMarker()
+    clearMarkers()
     isMoving = false
     enableMovementControls()
-end
-
--- Function to create a click marker
-local function createClickMarker(position)
-    clearMarker()
-
-    local marker = Instance.new("Part")
-    marker.Shape = Enum.PartType.Ball
-    marker.Size = Vector3.new(0.5, 0.5, 0.5)
-    marker.Position = position + Vector3.new(0, 0.5, 0)
-    marker.Anchored = true
-    marker.CanCollide = false
-    marker.Material = Enum.Material.Neon
-    marker.Color = Color3.fromRGB(255, 0, 0)
-    marker.Parent = workspace
-
-    currentMarker = marker
 end
 
 -- Detect screen taps on mobile
@@ -126,14 +142,14 @@ local function onCharacterAdded(newCharacter)
     character = newCharacter
     humanoid = newCharacter:WaitForChild("Humanoid")
     
-    -- Set up GUI and clear marker on respawn
+    -- Set up GUI and clear markers on respawn
     createGUI()
-    clearMarker()
+    clearMarkers()
 
     -- Reconnect the Died event
     humanoid.Died:Connect(function()
         isMoving = false
-        clearMarker() -- Clear any remaining markers when the player dies
+        clearMarkers() -- Clear any remaining markers when the player dies
     end)
 end
 
@@ -145,4 +161,4 @@ if player.Character then
     onCharacterAdded(player.Character)
 end
 
-print("click to move activate")
+print("Click to move activated")
