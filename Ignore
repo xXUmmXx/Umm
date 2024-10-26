@@ -11,6 +11,17 @@ local clickToMoveEnabled = true
 local isMoving = false
 local currentMarker = nil
 
+-- Add kill block tag
+local CollectionService = game:GetService("CollectionService")
+
+-- Function to clear the current marker
+local function clearMarker()
+    if currentMarker then
+        currentMarker:Destroy()
+        currentMarker = nil
+    end
+end
+
 -- Disable movement controls
 local function disableMovementControls()
     ContextActionService:BindAction("DisableMovement", function() return Enum.ContextActionResult.Sink end, false, Enum.KeyCode.W, Enum.KeyCode.A, Enum.KeyCode.S, Enum.KeyCode.D)
@@ -21,21 +32,14 @@ local function enableMovementControls()
     ContextActionService:UnbindAction("DisableMovement")
 end
 
--- Function to clear the current marker
-local function clearMarker()
-    if currentMarker then
-        currentMarker:Destroy()
-        currentMarker = nil
+-- Function to make the character jump
+local function jump()
+    if humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
+        humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
     end
 end
 
--- Function to move character directly to target if pathfinding fails
-local function walkDirectlyTo(targetPosition)
-    humanoid:MoveTo(targetPosition)
-    humanoid.MoveToFinished:Wait()
-end
-
--- Function to move character to a target position with fallback
+-- Function to move character to a target position with kill block avoidance
 local function moveToTapPosition(targetPosition)
     if not clickToMoveEnabled or isMoving then return end
 
@@ -47,13 +51,23 @@ local function moveToTapPosition(targetPosition)
         AgentHeight = 6,
         AgentCanJump = true,
         AgentJumpHeight = 7,
-        AgentMaxSlope = 50
+        AgentMaxSlope = 50,
+        CollisionGroup = "KillBlockAvoid" -- Add a collision group for kill blocks
     })
 
+    -- Set up collision group filter for kill blocks
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {character}
     path:ComputeAsync(character.PrimaryPart.Position, targetPosition)
 
     if path.Status == Enum.PathStatus.Success then
         for _, waypoint in ipairs(path:GetWaypoints()) do
+            -- Check for kill blocks in path
+            local partBelow = workspace:Raycast(waypoint.Position, Vector3.new(0, -1, 0), raycastParams)
+            if partBelow and CollectionService:HasTag(partBelow.Instance, "KillBlock") then
+                jump() -- Jump over kill block if necessary
+            end
             humanoid:MoveTo(waypoint.Position)
             if not humanoid.MoveToFinished:Wait() then
                 break
@@ -61,7 +75,8 @@ local function moveToTapPosition(targetPosition)
         end
     else
         print("Pathfinding failed, moving directly to target.")
-        walkDirectlyTo(targetPosition)
+        humanoid:MoveTo(targetPosition)
+        humanoid.MoveToFinished:Wait()
     end
 
     clearMarker()
@@ -111,7 +126,7 @@ local function createGUI()
 
     local toggleButton = Instance.new("TextButton")
     toggleButton.Size = UDim2.new(0, 100, 0, 50)
-    toggleButton.Position = UDim2.new(0.1, -70, 0.9, -250)
+    toggleButton.Position = UDim2.new(0.1, 0, 0.9, 0)
     toggleButton.Text = "Disable Move"
     toggleButton.Parent = screenGui
 
