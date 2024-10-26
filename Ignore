@@ -111,7 +111,7 @@ local function createGUI()
 
     local toggleButton = Instance.new("TextButton")
     toggleButton.Size = UDim2.new(0, 100, 0, 50)
-    toggleButton.Position = UDim2.new(0.1, 0, 0.9, 0)
+    toggleButton.Position = UDim2.new(0.1, -70, 0.9, -250)
     toggleButton.Text = "Disable Move"
     toggleButton.Parent = screenGui
 
